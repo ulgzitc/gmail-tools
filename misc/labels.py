@@ -10,7 +10,7 @@ os.chdir("../../env/")
 current_dir = os.getcwd()
 
 
-SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
+SCOPES = ["https://www.googleapis.com/auth/gmail.modify"]
 
 
 def main():
@@ -38,7 +38,7 @@ def main():
         else:
             print("Labels:")
             for label in labels:
-                print(label["name"])
+                print(f"{label['name']} | ID: {label['id']}")
 
     except HttpError as error:
         print(f"Error occured: {error}")
