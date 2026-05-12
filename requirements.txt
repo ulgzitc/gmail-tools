@@ -1,0 +1,13 @@
+scikit-learn
+email
+ps4
+datasets
+kagglehub
+jupyter
+pandas
+polars
+numpy
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
+lxml
