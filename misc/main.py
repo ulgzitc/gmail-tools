@@ -27,7 +27,11 @@ def predict(text):
 
 def parse_msg(msg):
     payload = msg.get("payload")
-    parts = payload.get("parts")[0]
+    try:
+        parts = payload.get("parts")[0]
+    except:
+        print("Here you got error with that parts part")
+        return 1
     if "data" in parts["body"]:
         data = parts["body"]["data"].replace("-", "+").replace("_", "/")
     else:
@@ -48,6 +52,38 @@ def clear_string(rawtext):
     return text.lower()
 
 
+def modify(service, msg_id, label_id):
+    mod_object = {
+        "addLabelIds": [label_id],
+    }
+    service.users().messages().modify(userId="me", id=msg_id, body=mod_object).execute()
+
+
+def create_label(service, label_name):
+    label_object = {
+        "name": label_name,
+        "messageListVisibility": "show",
+        "labelListVisibility": "labelShow",
+        "type": "user",
+    }
+    try:
+        label = (
+            service.users().labels().create(userId="me", body=label_object).execute()
+        )
+        print(f"Label created: {label['id']}")
+        return label["id"]
+    except Exception as exx:
+        print(
+            f"Ehh bro, error here, maybe you already had this shit but I don't think google names their labels WAHOOOO, so, {
+                exx
+            }'"
+        )
+        results = service.users().labels().list(userId="me").execute()
+        for l in results.get("labels", []):
+            if l["name"] == label_name:
+                return l["id"]
+
+
 def main():
     creds = None
     if os.path.exists("token.json"):
@@ -60,6 +96,9 @@ def main():
             token.write(creds.to_json())
 
     gmail_service = build("gmail", "v1", credentials=creds)
+
+    label_id = create_label(gmail_service, "YeHooo")
+    print(f"That new/ Label Id: {label_id}")
 
     results = (
         gmail_service.users().messages().list(userId="me", q="is:unread").execute()
@@ -77,6 +116,11 @@ def main():
             continue
         fintext = [clear_string(text)]
         result = predict(fintext)
+        if result[0] == 0:
+            continue
+
+        modify(gmail_service, msg["id"], label_id)
+
         print(fintext[0])
         print("Label: ", result, "\n\n")
 
