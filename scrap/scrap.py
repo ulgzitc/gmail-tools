@@ -3,9 +3,12 @@ import json
 import pprint
 import re
 import base64
+import time
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
+
+start = time.time()
 
 pp = pprint.PrettyPrinter(indent=2)
 current_dir = os.getcwd()
@@ -69,8 +72,12 @@ def collect_mails(service):
 
     # This doesn't take all the mails, query.
     # q="newer_than:1d" for emails newer than 1 day.
-    response = service.users().messages().list(
-        userId="me", maxResults=500).execute()
+    response = (
+        service.users()
+        .messages()
+        .list(userId="me", maxResults=500, includeSpamTrash=True)
+        .execute()
+    )
     if "messages" in response:
         messages.extend(response["messages"])
     while "nextPageToken" in response:
@@ -78,7 +85,9 @@ def collect_mails(service):
         response = (
             service.users()
             .messages()
-            .list(userId="me", pageToken=nextpage, maxResults=500)
+            .list(
+                userId="me", pageToken=nextpage, maxResults=500, includeSpamTrash=True
+            )
             .execute()
         )
         if "messages" in response:
@@ -87,6 +96,7 @@ def collect_mails(service):
     pp.pprint(messages[:5])
     print(".\n.\n.")
     print("Fetching all emails...")
+    print("This may take long...")
 
     # Fetching each messages
     for msg in messages:
@@ -121,10 +131,10 @@ def main():
 
     messages = collect_mails(service)
     decoded_messages = decode_message(messages)
-    with open("logs/messages.json", "w") as f:
+    with open("logs/emails.json", "w") as f:
         json.dump(decoded_messages, f)
         f.close()
-    print("Messages saved: ", os.path.join(os.getcwd(), "logs/messages.json"))
+    print("Messages saved: ", os.path.join(os.getcwd(), "logs/emails.json"))
 
     # Saving those unsuccessfull payload - logs
     with open("logs/payloads.json", "w") as f:
@@ -132,7 +142,9 @@ def main():
         f.close()
     print("Unsuccessfull payloads: ", os.path.join(
         os.getcwd(), "logs/payloads.json"))
+    runtime = time.time() - start
     print("Finished.")
+    print(f"Runtime: {runtime}")
 
 
 main()
