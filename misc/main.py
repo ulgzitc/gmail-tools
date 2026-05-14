@@ -9,8 +9,8 @@ from googleapiclient.discovery import build
 
 pp = pprint.PrettyPrinter(indent=2)
 
-transformer = joblib.load("../model/transformer.pkl")
-model = joblib.load("../model/simple.pkl")
+transformer = joblib.load("../spam-filter/model/transformer.pkl")
+model = joblib.load("../spam-filter/model/simple.pkl")
 
 os.chdir("../../env/")
 current_path = os.getcwd()

@@ -1,6 +1,4 @@
 scikit-learn
-email
-ps4
 datasets
 kagglehub
 jupyter
