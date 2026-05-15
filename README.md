@@ -1,2 +1,2 @@
-# EmailFilter
-Email filter for emails obviously (spam/verification codes)
+# Tools for abusing gmail
+I'll fill up the docs soon...
