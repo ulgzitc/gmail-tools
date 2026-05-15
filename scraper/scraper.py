@@ -1,18 +1,14 @@
 import os
-import json
-import pprint
 import re
-import base64
 import time
-from google.oauth2.credentials import Credentials
+import json
+import base64
+import pprint
 from googleapiclient.discovery import build
+from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 
-start = time.time()
-
 pp = pprint.PrettyPrinter(indent=2)
-current_dir = os.getcwd()
-os.chdir("../../env/")
 
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
 
@@ -27,9 +23,6 @@ def clean_string(text):
     return text
 
 
-logs = []
-
-
 def get_body(payload):
     if "parts" in payload:
         for part in payload["parts"]:
@@ -39,7 +32,6 @@ def get_body(payload):
     else:
         return payload.get("body", {}).get("data")
 
-    logs.append(payload)
     return None
 
 
@@ -66,16 +58,14 @@ def decode_message(messages):
     return good_messages
 
 
-def collect_mails(service):
+def collect_mails(service, query):
     messages = []
     full_format = []
 
-    # This doesn't take all the mails, query.
-    # q="newer_than:1d" for emails newer than 1 day.
     response = (
         service.users()
         .messages()
-        .list(userId="me", maxResults=500, includeSpamTrash=True)
+        .list(userId="me", maxResults=500, includeSpamTrash=True, q=query)
         .execute()
     )
     if "messages" in response:
@@ -86,7 +76,11 @@ def collect_mails(service):
             service.users()
             .messages()
             .list(
-                userId="me", pageToken=nextpage, maxResults=500, includeSpamTrash=True
+                userId="me",
+                pageToken=nextpage,
+                maxResults=500,
+                includeSpamTrash=True,
+                q=query,
             )
             .execute()
         )
@@ -111,40 +105,47 @@ def collect_mails(service):
     return full_format
 
 
-def main():
+def collect(token_path, creds_path, output_path, port, query):
+    start = time.time()
     creds = None
-    if os.path.exists("token.json"):
-        creds = Credentials.from_authorized_user_file("token.json", SCOPES)
+    if token_path is not None:
+        creds = Credentials.from_authorized_user_file(token_path, SCOPES)
         print("Credentials loaded successfully...")
-    if not creds or not creds.valid:
-        flow = InstalledAppFlow.from_client_secrets_file(
-            "client_secret.json", SCOPES)
-        creds = flow.run_local_server(port=8080)
+    elif not creds and creds_path is not None:
+        flow = InstalledAppFlow.from_client_secrets_file(creds_path, SCOPES)
+        creds = flow.run_local_server(port=port)
         print("Authorized successfully...")
-        with open("token.json", "w") as token:
+        path = os.path.join(os.path.dirname(creds_path), "token.json")
+        with open(path, "w") as token:
             token.write(creds.to_json())
             token.close()
-        print("Token saved: ", os.path.join(os.getcwd(), "token.json"))
+        print(
+            "Token saved to:",
+            path,
+            "\n"
+            "You can use the token next time [-t path/to/token.json], but expires at ~1 hour.",
+        )
+
+    else:
+        print(
+            "Credentials are not given. Please use -c path/to/creds.json or -t path/to/token.json"
+        )
+        return
 
     service = build("gmail", "v1", credentials=creds)
     print("Service built successfully...")
 
-    messages = collect_mails(service)
+    messages = collect_mails(service, query)
     decoded_messages = decode_message(messages)
-    with open("logs/emails.json", "w") as f:
-        json.dump(decoded_messages, f)
-        f.close()
-    print("Messages saved: ", os.path.join(os.getcwd(), "logs/emails.json"))
+    if output_path is not None:
+        with open(output_path, "w") as f:
+            json.dump(decoded_messages, f)
+            f.close()
+        print("Emails saved to:", output_path)
+    else:
+        pp.pprint(decoded_messages)
 
-    # Saving those unsuccessfull payload - logs
-    with open("logs/payloads.json", "w") as f:
-        json.dump(logs, f)
-        f.close()
-    print("Unsuccessfull payloads: ", os.path.join(
-        os.getcwd(), "logs/payloads.json"))
     runtime = time.time() - start
     print("Finished.")
-    print(f"Runtime: {runtime}")
-
-
-main()
+    print(f"Total runtime: {runtime:.2f} seconds. a.k.a ~{
+          (runtime / 60):.2f} minutes.")

@@ -10,7 +10,7 @@ os.chdir("../../env/")
 current_dir = os.getcwd()
 
 
-SCOPES = ["https://www.googleapis.com/auth/gmail.modify"]
+SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
 
 
 def main():
