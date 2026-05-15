@@ -4,6 +4,7 @@ import time
 import json
 import base64
 import pprint
+import loadbar
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -36,9 +37,11 @@ def get_body(payload):
 
 
 def decode_message(messages):
+    bar = loadbar.LoadBar(max=len(messages))
+    bar.start()
     print("Decoding the messages...")
     good_messages = []
-    for message in messages:
+    for step, message in enumerate(messages):
         payload = message["payload"]
         labels = message["labelIds"]
         data = get_body(payload)
@@ -55,6 +58,8 @@ def decode_message(messages):
 
         good_messages.append(
             {"messages": message, "labels": labels, "label": label})
+        bar.update(step=step)
+    bar.end()
     return good_messages
 
 
@@ -90,10 +95,11 @@ def collect_mails(service, query):
     pp.pprint(messages[:5])
     print(".\n.\n.")
     print("Fetching all emails...")
-    print("This may take long...")
 
     # Fetching each messages
-    for msg in messages:
+    bar = loadbar.LoadBar(max=len(messages))
+    bar.start()
+    for step, msg in enumerate(messages):
         result = (
             service.users()
             .messages()
@@ -101,7 +107,9 @@ def collect_mails(service, query):
             .execute()
         )
         full_format.append(result)
+        bar.update(step=step)
 
+    bar.end()
     return full_format
 
 
@@ -120,7 +128,7 @@ def collect(token_path, creds_path, output_path, port, query):
             token.write(creds.to_json())
             token.close()
         print(
-            "Token saved to:",
+            "New token saved to:",
             path,
             "\n"
             "You can use the token next time [-t path/to/token.json], but expires at ~1 hour.",
@@ -128,7 +136,7 @@ def collect(token_path, creds_path, output_path, port, query):
 
     else:
         print(
-            "Credentials are not given. Please use -c path/to/creds.json or -t path/to/token.json"
+            "Credentials are not given. Please use [-c path/to/creds.json] or [-t path/to/token.json]"
         )
         return
 
@@ -141,7 +149,7 @@ def collect(token_path, creds_path, output_path, port, query):
         with open(output_path, "w") as f:
             json.dump(decoded_messages, f)
             f.close()
-        print("Emails saved to:", output_path)
+        print("Results saved to:", output_path)
     else:
         pp.pprint(decoded_messages)
 
@@ -149,3 +157,4 @@ def collect(token_path, creds_path, output_path, port, query):
     print("Finished.")
     print(f"Total runtime: {runtime:.2f} seconds. a.k.a ~{
           (runtime / 60):.2f} minutes.")
+    service.close()

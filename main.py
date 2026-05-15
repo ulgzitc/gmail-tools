@@ -2,13 +2,8 @@
 from scraper.scraper import collect
 from markread.markread import read
 
-
-import os
 import argparse
 import pathlib
-
-
-current_dir = os.getcwd()
 
 
 parser = argparse.ArgumentParser(
@@ -19,8 +14,9 @@ parser = argparse.ArgumentParser(
     epilog="No idea how to help",
 )
 
+# Tool select
 parser.add_argument(
-    "tool", choices=["scrape", "read"], help="which tool to use")
+    "tool", choices=["scrape", "read"], help="Choose the tool to use")
 
 # Arguments for scraper
 parser.add_argument("-c", "--credentials", type=pathlib.Path)

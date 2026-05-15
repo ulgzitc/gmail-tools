@@ -12,14 +12,13 @@ SCOPES = ["https://www.googleapis.com/auth/gmail.modify"]
 
 def mark_as_read(service, messages):
     msg_ids = [msg["id"] for msg in messages]
-    print("Length: ", len(msg_ids))
+    print("Labeling the emails...")
 
     i = 0
     rank = 999
     num_iter = len(msg_ids) // rank + 1
     while i < num_iter:
-        print(f"Iteration: {i}")
-        batch = msg_ids[rank * i : rank * (i + 1)]
+        batch = msg_ids[rank * i: rank * (i + 1)]
         service.users().messages().batchModify(
             userId="me",
             body={"ids": batch, "removeLabelIds": ["UNREAD"]},
@@ -81,7 +80,8 @@ def read(token_path, creds_path, port):
         return
     gmail_service = build("gmail", "v1", credentials=creds)
 
-    messages_to_unread = query_messages(service=gmail_service, qfilter="is:unread")
+    messages_to_unread = query_messages(
+        service=gmail_service, qfilter="is:unread")
     if len(messages_to_unread) == 0:
         print("There's nothing to unread.")
         gmail_service.close()
@@ -89,6 +89,7 @@ def read(token_path, creds_path, port):
     mark_as_read(gmail_service, messages_to_unread)
     runtime = time.time() - start
     print("Finished.")
-    print(f"Total runtime: {runtime:.2f} seconds. a.k.a ~{(runtime / 60):.2f} minutes.")
+    print(f"Total runtime: {runtime:.2f} seconds. a.k.a ~{
+          (runtime / 60):.2f} minutes.")
 
     gmail_service.close()
