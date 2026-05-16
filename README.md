@@ -1,2 +1,3 @@
 # Tools for abusing gmail
 I'll fill up the docs soon...
+Also, scraper tool is no deprecated. Moved <a href="https://github.com/ulgzitc/gmail-scraper">here</a> as an independant tool
